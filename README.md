@@ -20,7 +20,8 @@ At this example we create a simple Golang app that runs a web server with a /hel
 We're going to build this image and run in a docker container to understand the basics.  
 ps: all files are located in `docker-example` directory
 
-Before jump in image building we need to write a simple web server as described.  
+Ensure that you have Docker installed, if not you can download [here](https://www.docker.com/products/docker-desktop/).  
+Before jump into image building we need to write a simple web server as described.  
 
 . create a file `main.go` and copy this code into it
 
@@ -66,7 +67,7 @@ At the same directory that you have this files, you can run the `docker build` c
 docker build -t docker-example .
 ```
 
-Now you can check your images with
+You can check your images with
 
 ```sh
 docker images
@@ -75,7 +76,7 @@ docker images
 With the image we will be able to create and run a new container to execute it.
 
 ```sh
-docker run --rm -p 8080:8080 docker-example
+docker run --rm --name my-docker-example -p 8080:8080 docker-example
 ```
 
 Note that we are exposing port 8080 from container in host 8080 (-p 8080:8080 option). Without this the web server will be unreachable from host.
@@ -102,7 +103,7 @@ Hello World%
 If we execute the container without exposing the port as mentioned before, than we will have some problems
 
 ```sh
-docker run --rm docker-example
+docker run --rm --name my-docker-example docker-example
 ```
 
 ```sh
@@ -110,7 +111,42 @@ curl localhost:8080/hello
 curl: (7) Failed to connect to localhost port 8080 after 5 ms: Couldn't connect to server
 ```
 
-#### Push to registry
+It is possible to access the shell inside the container that is running yoy application with the following command:
+
+```sh
+docker exec -it my-docker-example /bin/sh
+```
+
+The process that is running the shell have the same Linux namespaces as the main container proccess. This make possible to us explore the container and see how our app is running.  
+Each container has an isolated process tree, and also an isolated filesystem. Checking container processes will ensure to us the process tree isolation.
+
+```sh
+/app # ps -ef
+PID   USER     TIME  COMMAND
+    1 root      0:00 ./main
+   11 root      0:00 /bin/sh
+   17 root      0:00 ps -ef
+```
+
+Listing contents from root directory inside the container show to us about filesystem isolation.  
+
+```sh
+/ # ls
+app    dev    go     lib    mnt    proc   run    srv    tmp    var
+bin    etc    home   media  opt    root   sbin   sys    usr
+```
+
+When we need to stop a container we can execute
+
+```sh
+docker stop my-docker-example
+```
+
+If you run the container without `--rm` option you can delete the container with
+
+```sh
+docker rm my-docker-example
+```
 
 If we want to push the generated image to any registry we can execute a `docker push` command. This will allows anyone to pull this image from the registry if have access.
 
