@@ -1,4 +1,4 @@
-# Introduction to kubernetes with a simple example
+# Introduction to Kubernetes
 
 ## Docker
 
@@ -17,46 +17,95 @@ A container is defined by its image as well as any configuration options you pro
 ### Hands on
 
 At this example we create a simple Golang app that runs a web server with a /hello route.
-We're going to build this image and run in a docker container to understand the basics.
+We're going to build this image and run in a docker container to understand the basics.  
+ps: all files are located in `docker-example` directory
 
-#### Build Image
+Before jump in image building we need to write a simple web server as described.  
+
+. create a file `main.go` and copy this code into it
+
+```go
+package main
+
+import (
+	"fmt"
+	"net/http"
+)
+
+func helloHandler(w http.ResponseWriter, _ *http.Request) {
+	fmt.Fprint(w, "Hello World")
+}
+
+func main() {
+	http.HandleFunc("/hello", helloHandler)
+
+	fmt.Println("Server is running on http://localhost:8080/hello")
+	http.ListenAndServe(":8080", nil)
+}
+```
+
+Now we can create a Dockerfile that will contains the instructions to create the image.  
+
+. create a file `Dockerfile` and copy this code into it
+
+```dockerfile
+FROM golang:1.21.3-alpine3.18
+
+WORKDIR /app
+COPY . .
+RUN go build -o main .
+
+EXPOSE 8080
+
+CMD ["./main"]
+```
+
+At the same directory that you have this files, you can run the `docker build` command described below to generate the `docker-example` image.
 
 ```sh
 docker build -t docker-example .
 ```
 
-#### Execute image
+Now you can check your images with
+
+```sh
+docker images
+```
+
+With the image we will be able to create and run a new container to execute it.
 
 ```sh
 docker run --rm -p 8080:8080 docker-example
 ```
 
-Note that we are exposing port 8080 from container in host 8080. Without this the web server will be unreachable from host.
+Note that we are exposing port 8080 from container in host 8080 (-p 8080:8080 option). Without this the web server will be unreachable from host.
 The --rm flag automatically remove the container when exits.
 
-#### Check all container that is running
+After run the container we will be able to check basic informations about it with
 
 ```sh
 docker ps
 ```
 
-#### Run a request to docker-example container
+To access your application you can execute a simple `curl` command to `localhost:8080/hello` as described
 
 ```sh
 curl localhost:8080/hello
 ```
 
-Running correctly we expect the following response
+We expect the following answer.
 
 ```sh
 Hello World%
 ```
 
-If we execute the container without exposing the port as mentioned before, than we expect the following response
+If we execute the container without exposing the port as mentioned before, than we will have some problems
 
 ```sh
 docker run --rm docker-example
+```
 
+```sh
 curl localhost:8080/hello
 curl: (7) Failed to connect to localhost port 8080 after 5 ms: Couldn't connect to server
 ```
