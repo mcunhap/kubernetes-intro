@@ -374,7 +374,7 @@ To check our services we can run
 kubectl get services
 ```
 
-If we check the output we will see that Service port 8080 is mapped to 32621 in Kubernetes node.
+If we check the output we will see that Service port 8080 is mapped to 32621 in Kubernetes node. Note that this port is selected randomly by default, so it might change for each one.
 
 ```sh
 NAME                 TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
@@ -418,6 +418,60 @@ Then will be mapped another port to use locally and you can access in your brows
 ```sh
 curl localhost:<port-selected>/hello
 ```
+
+#### Scale our application horizontally
+
+Now that we have our application running and accessible we can manage to increase and decrease the replicas. First we will make it manually by editing our `go-web-app.yml`
+file changing the replicas field and applying changes with `kubectl apply -f go-web-app.yml` command:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-web-app
+  labels:
+    app: go-web-app
+spec:
+  selector:
+    matchLabels:
+      app: go-web-app
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: go-web-app
+    spec:
+      containers:
+      - name: go-web-app
+        image: mcunhap/go-web-app
+        resources:
+          requests:
+            cpu: "1000m"
+            memory: "1Gi"
+          limits:
+            cpu: "1000m"
+            memory: "1.5Gi"
+        ports:
+          - containerPort: 8080
+            protocol: TCP
+```
+
+Or just running the command
+
+```sh
+kubectl scale deployment go-web-app --replicas=3
+```
+
+After apply the upscale we can check our pods with `kubectl get pods` and we will see something like:
+
+```sh
+NAME                         READY   STATUS    RESTARTS   AGE
+go-web-app-59d87f9d7-dzqlt   1/1     Running   0          40m
+go-web-app-59d87f9d7-kbb7s   1/1     Running   0          83s
+go-web-app-59d87f9d7-p8gqw   1/1     Running   0          83s
+```
+
+If we want to scale down we can follow the same process, but setting the replicas number to a lower value than current value.
 
 
 ### ref
