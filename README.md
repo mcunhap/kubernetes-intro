@@ -21,6 +21,9 @@ We're going to build this image and run in a docker container to understand the 
 ps: all files are located in `docker-example` directory
 
 Ensure that you have Docker installed, if not you can download [here](https://www.docker.com/products/docker-desktop/).  
+
+#### Create simple web server
+
 Before jump into image building we need to write a simple web server as described.  
 
 . create a file `main.go` and copy this code into it
@@ -44,6 +47,8 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 }
 ```
+
+##### Create Dockerfile
 
 Now we can create a Dockerfile that will contains the instructions to create the image.  
 
@@ -72,6 +77,8 @@ You can check your images with
 ```sh
 docker images
 ```
+
+#### Run a container
 
 With the image we will be able to create and run a new container to execute it.
 
@@ -111,7 +118,9 @@ curl localhost:8080/hello
 curl: (7) Failed to connect to localhost port 8080 after 5 ms: Couldn't connect to server
 ```
 
-It is possible to access the shell inside the container that is running yoy application with the following command:
+#### Running a shell inside an existing container
+
+It is possible to access the shell inside the container that is running your application with the following command:
 
 ```sh
 docker exec -it my-docker-example /bin/sh
@@ -136,6 +145,8 @@ app    dev    go     lib    mnt    proc   run    srv    tmp    var
 bin    etc    home   media  opt    root   sbin   sys    usr
 ```
 
+#### Stop and delete containers
+
 When we need to stop a container we can execute
 
 ```sh
@@ -151,3 +162,9 @@ docker rm my-docker-example
 If we want to push the generated image to any registry we can execute a `docker push` command. This will allows anyone to pull this image from the registry if have access.
 
 ## Kubernetes
+
+
+
+
+### ref
+[https://github.com/knrt10/kubernetes-basicLearning#what-is-docker](https://github.com/knrt10/kubernetes-basicLearning#what-is-docker)
