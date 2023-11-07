@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-web-app
+  labels:
+    app: go-web-app
+spec:
+  selector:
+    matchLabels:
+      app: go-web-app
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: go-web-app
+    spec:
+      containers:
+      - name: go-web-app
+        image: mcunhap/go-web-app
+        resources:
+          requests:
+            cpu: "1000m"
+            memory: "1Gi"
+          limits:
+            cpu: "1000m"
+            memory: "1.5Gi"
+        ports:
+          - containerPort: 8080
+            protocol: TCP

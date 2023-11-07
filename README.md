@@ -14,7 +14,7 @@ By default, a container is relatively well isolated from other containers and it
 A container is defined by its image as well as any configuration options you provide to it when you create or start it. When a container is removed, any changes to its state that aren't stored in persistent storage disappear.  
 3. Registry: a Docker registry stores Docker images. Docker Hub is a public registry that anyone can use, and Docker looks for images on Docker Hub by default. You can even run your own private registry.  
 
-### Hands on
+### Hands On
 
 At this example we create a simple Golang app that runs a web server with a /hello route.
 We're going to build this image and run in a docker container to understand the basics.  
@@ -66,10 +66,10 @@ EXPOSE 8080
 CMD ["./main"]
 ```
 
-At the same directory that you have this files, you can run the `docker build` command described below to generate the `docker-example` image.
+At the same directory that you have this files, you can run the `docker build` command described below to generate the `go-web-app` image.
 
 ```sh
-docker build -t docker-example .
+docker build -t go-web-app .
 ```
 
 You can check your images with
@@ -83,7 +83,7 @@ docker images
 With the image we will be able to create and run a new container to execute it.
 
 ```sh
-docker run --rm --name my-docker-example -p 8080:8080 docker-example
+docker run --rm --name my-go-web-app -p 8080:8080 go-web-app
 ```
 
 Note that we are exposing port 8080 from container in host 8080 (-p 8080:8080 option). Without this the web server will be unreachable from host.
@@ -110,7 +110,7 @@ Hello World%
 If we execute the container without exposing the port as mentioned before, than we will have some problems
 
 ```sh
-docker run --rm --name my-docker-example docker-example
+docker run --rm --name my-go-web-app go-web-app
 ```
 
 ```sh
@@ -123,7 +123,7 @@ curl: (7) Failed to connect to localhost port 8080 after 5 ms: Couldn't connect 
 It is possible to access the shell inside the container that is running your application with the following command:
 
 ```sh
-docker exec -it my-docker-example /bin/sh
+docker exec -it my-go-web-app /bin/sh
 ```
 
 The process that is running the shell have the same Linux namespaces as the main container proccess. This make possible to us explore the container and see how our app is running.  
@@ -150,16 +150,29 @@ bin    etc    home   media  opt    root   sbin   sys    usr
 When we need to stop a container we can execute
 
 ```sh
-docker stop my-docker-example
+docker stop my-go-web-app
 ```
 
 If you run the container without `--rm` option you can delete the container with
 
 ```sh
-docker rm my-docker-example
+docker rm my-go-web-app
 ```
 
-If we want to push the generated image to any registry we can execute a `docker push` command. This will allows anyone to pull this image from the registry if have access.
+To make our image accessible to any user and application that we want to, then we need to push the generated image to any registry. To make easier we will push to [Docker Hub](https://hub.docker.com/).  
+Before push we need to create an account in Docker Hub and tag our image following Docker Hub's rules, that is include you Docker Hub ID in the tag like below
+
+```sh
+docker tag go-web-app mcunhap/go-web-app
+```
+
+You can change `mcunhap` with your personal Docker Hub ID.  
+
+Before push you need to login to docker hub with `docker login`, then you can run the command below to push the image
+
+```sh
+docker push mcunhap/go-web-app
+```
 
 ## Kubernetes
 
@@ -221,6 +234,190 @@ Kubernetes provides three possibilities for autoscaling:
 - **Vertical Pod Autoscaler (VPA):** Directly changes the resources of existing pods. As it is necessary to modify the available resources in existing pods, a service restart is required, hindering the use of VPA for applications requiring high availability.
 
 - **Cluster Autoscaler (CA):** Increases the number of nodes in the Kubernetes cluster when it is no longer possible to allocate pods on existing nodes. It is commonly used by public clouds that provide Kubernetes clusters, such as GCP (Google Cloud Platform).
+
+### Hands On
+
+At this example we will run a Kubernetes single node cluster using [Minikube](https://minikube.sigs.k8s.io/docs/), that is a tool to quickly sets up a local Kubernetes cluster and is great for test and develop apps locally. Then, we will deploy the simple web app that we build in Docker section.
+To install minikube you can follow instructions in minikube [documentation](https://minikube.sigs.k8s.io/docs/start/).
+
+#### Cluster setup
+
+Once you have installed minikube you can easily start up the Kubernetes cluster with
+
+```sh
+minikube start
+```
+
+We will also need kubectl CLI to comunicate with Kubernetes cluster and run commands. If needed you can follow this (documentation)[https://kubernetes.io/docs/tasks/tools/] to install it.
+
+When the cluster finish start up process you can check if your cluster is working with
+
+```sh
+kubectl cluster-info
+```
+
+We expect an output like the one below
+
+```sh
+Kubernetes control plane is running at https://127.0.0.1:59579
+CoreDNS is running at https://127.0.0.1:59579/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
+```
+
+If you check docker containers with `docker ps` you will realize that we have a new container that is running minikube. Inside this container is running our Kubernetes cluster, that is totally decoupled from our OS.
+
+#### Deploy web application
+
+Now we will deploy the image that we build in Docker section to Kubernetes in a way to make it accessible outside the cluster. To create the web server, build the image and push to Docker Hub you can check Docker section, if haven't done yet.
+
+The easiest way to deploy our application is using `kubectl create` command like this:
+
+```sh
+kubectl create deployment go-web-app --image=mcunhap/go-web-app --port=8080
+```
+
+Another option is to create an `yaml` file and describe exactly what we want. To do it in that way you can create a file named `go-web-app.yml` and add the following code to it
+
+```yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-web-app
+  labels:
+    app: go-web-app
+spec:
+  selector:
+    matchLabels:
+      app: go-web-app
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: go-web-app
+    spec:
+      containers:
+      - name: go-web-app
+        image: mcunhap/go-web-app
+        resources:
+          requests:
+            cpu: "1000m"
+            memory: "1Gi"
+          limits:
+            cpu: "1000m"
+            memory: "1.5Gi"
+        ports:
+          - containerPort: 8080
+            protocol: TCP
+```
+
+Note that in this yaml file we are specifying more information, like the resources that each container can use and the number of desired replicas.  
+With this yaml written we can create the deployment running
+
+```sh
+kubectl apply -f go-web-app.yml
+```
+
+We can check our deployments with
+
+```sh
+kubectl get deployments
+```
+
+And our pods with
+
+```sh
+kubectl get pods
+```
+
+To get more informations about pods you can add `-o wide` to `kubectl get pods` command, like
+
+```sh
+kubectl get pods -o wide
+```
+
+Now we have our image deployed to the Kubernetes, but how can we access it? Each pod gets its own IP, but this address is internal to the cluster and isn't accessible from outside of it. So, if we try to make
+
+```
+curl localhost:8080/hello
+```
+
+will result in a fail, since the application is not accessible outside the cluster. To make accessible we need to expose it through a Service.  
+Now we will create an Service object of type NodePort. Create a file named `go-web-app-service.yml` and add the following code to it.
+
+```yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-web-app-service
+spec:
+  type: NodePort
+  selector:
+    app: go-web-app
+  ports:
+  - name: gateway
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+```
+
+Here we are defining a NodePort service and mapping the actual port on which our application is running inside the container (targetPort) to Service specific port (port) expliciting TCP protocol. Note that we are mapping this service to
+app `go-web-app`, so Kubernetes know to which app this Service is pointing to. Then, we can apply the service with
+
+```sh
+kubectl apply -f go-web-app-service.yml
+```
+
+To check our services we can run
+
+```sh
+kubectl get services
+```
+
+If we check the output we will see that Service port 8080 is mapped to 32621 in Kubernetes node.
+
+```sh
+NAME                 TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
+go-web-app-service   NodePort    10.100.240.92   <none>        8080:32621/TCP   9m21s
+```
+
+Now, if we try to access our application we still get a failure...
+
+```sh
+curl localhost:32621/hello
+curl: (7) Failed to connect to localhost port 32621 after 7 ms: Couldn't connect to server
+```
+
+But, why? Because minikube is not running in our host, but inside a docker container. So, we have two options:
+
+1. Access the container that is running minikube and access our application in port 32621
+2. Access our application from our host with minikube tunnel
+
+
+To make the first option we can run
+
+```sh
+docker exec -it minikube /bin/sh
+```
+
+Inside the container just make the request to `localhost:32621/hello` and...
+
+```sh
+curl localhost:32621/hello
+Hello World
+```
+
+To access using minikube tunnel, you can execute
+
+```sh
+minikube service go-web-app-service
+```
+
+Then will be mapped another port to use locally and you can access in your browser, or make the request with curl
+
+```sh
+curl localhost:<port-selected>/hello
+```
 
 
 ### ref
