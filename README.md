@@ -169,9 +169,22 @@ The architecture of Kubernetes, as described in [documentation](https://kubernet
 
 ![image](docs/images/k8s-architecture.png)
 
-The Kubernetes Master Node is composed of three main components: the API server, which exposes the Kubernetes API and serves as the entry point for all services; the Scheduler, responsible for monitoring newly created pods that have not been assigned to a node yet and selecting a suitable node for their execution; and the Controller Manager, tasked with managing the cluster's controllers, ensuring proper cluster state maintenance.  
+The Kubernetes Master Node consists of three main components:
 
-The Kubernetes Worker Node also consists of three main components: the Kubelet, an agent running on each node that ensures containers are running in a pod; the Kube Proxy, a network proxy responsible for maintaining network rules and enabling communication with pods both inside and outside the cluster; and the Container Runtime, the software responsible for running containers, such as Docker.  
+- **API Server:** This component exposes the Kubernetes API, serving as the entry point for all services.
+
+- **Scheduler:** Responsible for monitoring newly created pods that have not been assigned to a node and selecting a suitable node for their execution.
+
+- **Controller Manager:** Tasked with managing the cluster's controllers, ensuring proper cluster state maintenance.
+
+The Kubernetes Worker Node also comprises three main components:
+
+- **Kubelet:** An agent running on each node, ensuring containers are running in a pod.
+
+- **Kube Proxy:** A network proxy responsible for maintaining network rules and enabling communication with pods both inside and outside the cluster.
+
+- **Container Runtime:** The software responsible for running containers, such as Docker.
+
 
 Finally, the Kubernetes architecture includes Etcd, a consistent and highly available key-value store used for all cluster data.  
 
