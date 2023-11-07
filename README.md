@@ -163,8 +163,52 @@ If we want to push the generated image to any registry we can execute a `docker 
 
 ## Kubernetes
 
+Kubernetes is an open-source platform that enables the automation, management, and scalability of containerized applications, commonly used with Docker.  
 
+The architecture of Kubernetes, as described in [documentation](https://kubernetes.io/pt-br/docs/concepts/overview/components/) can be seen in figure below. It consists of different components that work together to provide a resilient and scalable environment. When using Kubernetes, we deal with a Kubernetes cluster, which is a set of processing servers called nodes. Pods will be hosted on these servers, where the application will run. There are two types of nodes: the Master Node, responsible for making scalability decisions and managing cluster resources, and the Worker Nodes, responsible for hosting applications. Every Kubernetes cluster has at least one Worker Node.  
+
+![image](docs/images/k8s-architecture.png)
+
+The Kubernetes Master Node is composed of three main components: the API server, which exposes the Kubernetes API and serves as the entry point for all services; the Scheduler, responsible for monitoring newly created pods that have not been assigned to a node yet and selecting a suitable node for their execution; and the Controller Manager, tasked with managing the cluster's controllers, ensuring proper cluster state maintenance.  
+
+The Kubernetes Worker Node also consists of three main components: the Kubelet, an agent running on each node that ensures containers are running in a pod; the Kube Proxy, a network proxy responsible for maintaining network rules and enabling communication with pods both inside and outside the cluster; and the Container Runtime, the software responsible for running containers, such as Docker.  
+
+Finally, the Kubernetes architecture includes Etcd, a consistent and highly available key-value store used for all cluster data.  
+
+### Concepts
+
+Next, let's define the concept of a *pod*, understand what it represents, and explore the available options for *workload resources* and services in Kubernetes.
+
+In the context of Kubernetes, the [pod](https://kubernetes.io/docs/concepts/workloads/pods/) represents the smallest deployable unit under our control for creation and management. In its typical configuration, a *pod* consists of a single container; however, in situations involving applications composed of multiple interconnected containers, the *pod* can encompass several containers. This possibility arises due to the sharing of network and storage resources among all containers contained in the *pod*. It's worth noting that *pods* in Kubernetes are ephemeral by nature, meaning they can be created, deleted, and recreated dynamically to adapt to application demands.
+
+Normally, *pods* are not created directly as a resource in Kubernetes but are instead created from *workload resources*. A [workload resource](https://kubernetes.io/docs/concepts/workloads/) is basically an automated way of managing a set of *pods*. Kubernetes provides us with some *workload resources*:
+
+- **Deployment**: Manages stateless applications where the state is not saved, and each transaction can be interpreted as starting from scratch.
+- **StatefulSet**: Manages stateful applications where state persistence is required.
+- **DaemonSet**: Ensures a specific copy of a *pod* runs on each node of the cluster. In case new nodes are added to the cluster, this *workload* guarantees that a new *pod* will appear on the new node of the cluster.
+- **Job and CronJob**: *Job* provides a way to execute tasks that run once and are completed. For scenarios where the same *Job* needs to be executed multiple times according to a schedule, we can use *CronJob*.
+
+To expose an application from a set of *pods* as a network service, Kubernetes provides the *Service* resource. With it, we can define a logical set of *pods* and a stable way to access them. The *service* makes it possible to expose this set not only internally to the cluster but also externally if necessary. Kubernetes provides us with the following types of *service*:
+
+- **ClusterIP**: Allocates an internal IP, making the set of *pods* accessible only internally within the cluster.
+- **NodePort**: Exposes the service on a fixed port of each cluster node, making it accessible from the cluster node's IP on the configured port.
+- **LoadBalancer**: Exposes the service externally using an external load balancer. Note that Kubernetes does not provide a load balancer component; you need to provide one, commonly offered in public cloud clusters such as GCP.
+- **ExternalName**: Maps the service to a specified Domain Name System (DNS).
+
+### Autoscaling
+
+Autoscaling aims to dynamically adjust processing resources based on the application's demand. This approach ensures that more resources are allocated during peak demand and deallocated during idle times. Thus, it guarantees high availability for the application and optimization of the resources used.
+
+The autoscaling process consists of four distinct phases. The first phase is monitoring, where a system is used to collect data about the monitored resources. Next, this data is analyzed by the autoscaling system, which uses a predefined rule to plan an action to be executed. The granularity and quality of the monitoring data have a direct impact on the performance of the autoscaling system, so it is crucial that the collected data for analysis is reliable and readily available.
+
+Kubernetes provides three possibilities for autoscaling:
+
+- **Horizontal Pod Autoscaler (HPA):** Adds new pods that run the same application, balancing the load across more processing units. Since only new pods need to be added, there is no need to restart the running application, making HPA attractive for applications requiring high availability.
+
+- **Vertical Pod Autoscaler (VPA):** Directly changes the resources of existing pods. As it is necessary to modify the available resources in existing pods, a service restart is required, hindering the use of VPA for applications requiring high availability.
+
+- **Cluster Autoscaler (CA):** Increases the number of nodes in the Kubernetes cluster when it is no longer possible to allocate pods on existing nodes. It is commonly used by public clouds that provide Kubernetes clusters, such as GCP (Google Cloud Platform).
 
 
 ### ref
-[https://github.com/knrt10/kubernetes-basicLearning#what-is-docker](https://github.com/knrt10/kubernetes-basicLearning#what-is-docker)
+[https://github.com/knrt10/kubernetes-basicLearning](https://github.com/knrt10/kubernetes-basicLearning)
