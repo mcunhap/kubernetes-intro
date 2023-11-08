@@ -473,6 +473,120 @@ go-web-app-59d87f9d7-p8gqw   1/1     Running   0          83s
 
 If we want to scale down we can follow the same process, but setting the replicas number to a lower value than current value.
 
+#### HPA Example
+
+Now we want to scale our application automatically. To see an example we are going to follow Kubernetes [documentation](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/) HPA walkthrough.
+
+First we need to enable metrics-server in our minikube cluster. To do so, just run
+
+```sh
+minikube addons enable metrics-server
+```
+
+[Metrics server](https://github.com/kubernetes-sigs/metrics-server) is a source of container resource metrics for Kubernetes built-in autoscale pipelines. Metrics Server collects resource metrics from Kubelets and exposes them in Kubernetes apiserver through Metrics API for use by Horizontal Pod Autoscaler and Vertical Pod Autoscaler.
+
+Now that we have enabled metrics-server we will be able to get resource metrics from pods and make decisions based on them. First we will create a file name `php-apache.yml` and include the following code to it
+
+```yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: php-apache
+spec:
+  selector:
+    matchLabels:
+      run: php-apache
+  template:
+    metadata:
+      labels:
+        run: php-apache
+    spec:
+      containers:
+      - name: php-apache
+        image: registry.k8s.io/hpa-example
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            cpu: 500m
+          requests:
+            cpu: 200m
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: php-apache
+  labels:
+    run: php-apache
+spec:
+  ports:
+  - port: 80
+  selector:
+    run: php-apache
+```
+
+Here we are describing a deployment and a service in the same yaml file (yes! that is possible!), this deployment will use an example image from kubernetes registry and each container will request 200m CPU with a limit of 500m. That means that in the beginning only 200m CPU will be requested, but if necessary we can go up to 500m, basically. We're going to expose this deploy with a ClusterIP service, that means that this will only be accessible inside the cluster.
+
+Now we can apply this to our cluster with
+
+```sh
+kubectl apply -f php-apache.yml
+```
+
+We can check our pods and service with the commands that we already learn.
+
+Now, we need to set up our HPA. So, we are going to create a file named `php-apache-hpa.yml` and include the following code to it
+
+```yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: php-apache-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: php-apache
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+```
+
+Here we are creating a HPA with minimum replicas 1 and maximum replicas 10, and the rule to scale will be based on CPU utilization with an average of 50. That means that our applicatio will scale up when the average utilization of pods CPU reach 50. Note that we are binding this HPA to php-apache deployment.
+
+To apply this HPA we can run
+
+```sh
+kubectl apply -f php-apache-hpa.yml
+```
+
+We can check our HPA status with
+
+```sh
+kubectl get hpa php-apache-hpa
+```
+
+With everything working we can increase load of our application. To do this we will start a different pod to act as a client. The container that will act like a client will contain a infinite loop sending queries to the php-apache server. Run the code below in a separate terminal
+
+```sh
+kubectl run -i --tty load-generator --rm --image=busybox:1.28 --restart=Never -- /bin/sh -c "while sleep 0.01; do wget -q -O- http://php-apache; done"
+```
+
+To continually watch HPA status we can run in another terminal
+
+```sh
+kubectl get hpa php-apache-hpa -w
+```
+
+In a few minutes we will see the higher CPU load, and then more replicas getting added.
+
+To stop sending load to the application just hit `<Ctrl> + C` to the terminal that is running our load container. In a few minutes we can check the load decreasing and then php-apache replicas decreasing also.
 
 ### ref
 [https://github.com/knrt10/kubernetes-basicLearning](https://github.com/knrt10/kubernetes-basicLearning)
