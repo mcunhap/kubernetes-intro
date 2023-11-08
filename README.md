@@ -589,4 +589,6 @@ In a few minutes we will see the higher CPU load, and then more replicas getting
 To stop sending load to the application just hit `<Ctrl> + C` to the terminal that is running our load container. In a few minutes we can check the load decreasing and then php-apache replicas decreasing also.
 
 ### ref
+[https://kubernetes.io/docs](https://kubernetes.io/docs)
+[https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/)
 [https://github.com/knrt10/kubernetes-basicLearning](https://github.com/knrt10/kubernetes-basicLearning)
