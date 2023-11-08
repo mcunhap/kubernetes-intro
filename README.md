@@ -1,5 +1,7 @@
 # Introduction to Kubernetes
 
+Just a basic content about building a Docker image and running in a local Kubernetes cluster with minikube.
+
 ## Docker
 
 To understand the basics of Kubernetes is important to know the basics of Docker. All content describe below can be found in [Docker official documentation](https://docs.docker.com/get-started/overview/)
